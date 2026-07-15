@@ -3,7 +3,6 @@ import uvicorn
 import whisper
 import asyncio
 import os
-import subprocess
 import torch
 
 app = FastAPI()
