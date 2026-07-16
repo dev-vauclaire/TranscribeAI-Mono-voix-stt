@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 import uvicorn
 import whisper
@@ -5,11 +6,10 @@ import asyncio
 import os
 import torch
 
-app = FastAPI()
-
-@app.on_event("startup")
-async def startup():
-    MODEL_DIR = os.getenv("ASR_MODEL_PATH", "/home/models/whisper")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Load the ML model
+    MODEL_DIR = os.getenv("ASR_MODEL_PATH", f"/home/{os.getenv('USER')}/models")
     MODEL_NAME = os.getenv("ASR_MODEL_NAME", "base")
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -25,6 +25,12 @@ async def startup():
 
     print(f"✅ Modèle {MODEL_NAME} prêt sur {DEVICE}")
     app.state.is_processing = False
+    yield
+    # Clean up the model and free GPU memory
+    del app.state.model
+    torch.cuda.empty_cache()
+
+app = FastAPI(lifespan=lifespan)
 
 async def convert_to_wav(input_path, output_path):
     cmd = ["ffmpeg", "-y", "-i", input_path, output_path]
