@@ -1,0 +1,22 @@
+services:
+  transcribe-ai-mono-voix:
+    build: .
+    image: transcribe-ai-mono-voix:latest
+    ports:
+      - "5001:5001"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    volumes:
+      - model-cache:/models
+    environment:
+      ASR_MODEL_PATH: /models
+      ASR_MODEL_NAME: base
+
+volumes:
+  model-cache:
+    name: transcribe-ai-mono-voix-models
